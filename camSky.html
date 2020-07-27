@@ -13,7 +13,7 @@
 
     let starThreeObjects = undefined
     let planetThreeObjects = undefined
-
+    let ringsThreeObjects = undefined
 
     setTimeout(main, 1);
     async function main(){
@@ -34,7 +34,7 @@
         const DATE = new Date("2020-6-21 00:53")
         starThreeObjects = await addStars(scene, starThreeObjects, stars, LON, LAT, DATE)
         planetThreeObjects = await addPlanets(scene, planetThreeObjects, LON, LAT, DATE)
-        makeRings(scene)
+        ringsThreeObjects = makeRings(scene, LON, LAT, DATE)
         console.log('Done adding stars and planets')
         renderer.render( scene, camera );
         //
@@ -84,7 +84,7 @@
             // console.log('fov', camera.fov)
             camera.updateProjectionMatrix()
             camera.rotation.x = GUIParameters.y * Math.PI/180 // i think x and y are different than AXIS cams
-            camera.rotation.y = -GUIParameters.x * Math.PI/180
+            camera.rotation.y = -GUIParameters.x * Math.PI/180 // negative for some reason
             // camera.rotation.z = GUIParameters.z * Math.PI/180
             if(GUIParameters.dirtyBit){
                 const lon = GUIParameters.lon
@@ -92,6 +92,10 @@
                 const date = GUIParameters.date
                 starThreeObjects = await addStars(scene, starThreeObjects, stars, lon,lat, date)
                 planetThreeObjects = await addPlanets(scene, planetThreeObjects, lon, lat, date)
+                for(let obj of ringsThreeObjects) {
+                    scene.remove(obj)
+                }
+                ringsThreeObjects = makeRings(scene, lon,lat,date)
                 GUIParameters.dirtyBit = false
             }
             renderer.render( scene, camera )

@@ -178,33 +178,37 @@ export async function loadStars() {
   return json;
 }
 
-export function makeRings(scene) {
+export function makeRings(scene, lon, lat, date) {
+  const objects = [];
   var material = new THREE.LineBasicMaterial({ color: 0xff0000 });
   for (var dec = -90; dec <= 85; dec += 15) {
     let points = [];
-    let [x1, y1, z1] = raDec2XYZ(0, dec);
+    let [x1, y1, z1] = raDec2XYZ(0, dec, lon, lat, date);
     points.push(new THREE.Vector3(x1, y1, z1));
     for (var ra = 1; ra <= 360; ra += 1) {
-      let [x2, y2, z2] = raDec2XYZ(ra, dec);
+      let [x2, y2, z2] = raDec2XYZ(ra, dec, lon, lat, date);
       points.push(new THREE.Vector3(x2, y2, z2));
     }
     var geometry = new THREE.BufferGeometry().setFromPoints(points);
     var line = new THREE.Line(geometry, material);
     scene.add(line);
+    objects.push(line);
   }
   var material = new THREE.LineBasicMaterial({ color: 0xff0000 });
   for (var ra = 0; ra < 360; ra += 15) {
     let points = [];
-    let [x1, y1, z1] = raDec2XYZ(ra, -75);
+    let [x1, y1, z1] = raDec2XYZ(ra, -75, lon, lat, date);
     points.push(new THREE.Vector3(x1, y1, z1));
     for (var dec = -90; dec <= 90; dec += 1) {
       if (ra % 90 == 0 || Math.abs(dec) <= 75) {
-        let [x2, y2, z2] = raDec2XYZ(ra, dec);
+        let [x2, y2, z2] = raDec2XYZ(ra, dec, lon, lat, date);
         points.push(new THREE.Vector3(x2, y2, z2));
       }
     }
     var geometry = new THREE.BufferGeometry().setFromPoints(points);
     var line = new THREE.Line(geometry, material);
-    scene.add(line);
+    const fu = scene.add(line);
+    objects.push(line);
   }
+  return objects;
 }
