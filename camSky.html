@@ -79,11 +79,12 @@
     function render(renderer, scene, camera, controls, starThreeObjects, stars, planetThreeObjects){
         requestAnimationFrame(async ()=>{
             if(controls){controls.update()}
-            
-            camera.fov = Math.atan2(35, GUIParameters.z) * 180/Math.PI // FOV is in degrees. 35 mm maybe ???
+            const sensSize = Math.tan(62.8 * Math.PI/180) // zoom 1 is 62.8 degrees fov
+            camera.fov = Math.atan2(sensSize, GUIParameters.z) * 180/Math.PI // FOV is in degrees. 35 mm maybe ???
+            // console.log('fov', camera.fov)
             camera.updateProjectionMatrix()
             camera.rotation.x = GUIParameters.y * Math.PI/180 // i think x and y are different than AXIS cams
-            camera.rotation.y = GUIParameters.x * Math.PI/180
+            camera.rotation.y = -GUIParameters.x * Math.PI/180
             // camera.rotation.z = GUIParameters.z * Math.PI/180
             if(GUIParameters.dirtyBit){
                 const lon = GUIParameters.lon
