@@ -1,0 +1,22 @@
+<html>
+    <script type="module">
+
+        import {getIndexPageByUsualSuspectsSearch, parseIndexPageData} from './utils.js'
+        
+
+        async function main() {
+            console.log('main called')
+            const cameraID = 'Axis-DuncanRanch2'
+            const approxTime = 1633465647000
+            const { path, response } =
+                await getIndexPageByUsualSuspectsSearch(cameraID, approxTime- Math.random()*60*60*24*365)
+            console.log('Parsing index Path', path)
+            const text = await response.text()
+            const indexTimes = await parseIndexPageData(text)
+            const indexTimesWithPath = indexTimes.map(x=>{return {...x, url:`${path}/${x.filename}`} })
+            console.log(indexTimesWithPath)
+        }
+        setTimeout(main)
+
+    </script>
+</html>

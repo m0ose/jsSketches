@@ -1,0 +1,49 @@
+<html>
+
+<head>
+  <script type='module'>
+
+    import { HexLattice } from './hexLattice.js'
+    import { iteration, drawCircles, drawLines } from './metacron.js'
+
+
+    function wait(ms) {
+      return new Promise((resolve, reject) => {
+        setTimeout(resolve, ms)
+      })
+    }
+
+    async function main() {
+
+      const WIDTH = 512
+      const RADIUS = 2
+
+      const can = document.createElement('canvas')
+      can.height = can.width = 800
+      document.body.appendChild(can)
+      const ctx = can.getContext('2d')
+      ctx.fillStyle = "#000"
+      ctx.fillRect(0, 0, can.width, can.height)
+
+      let myGrid = new HexLattice(WIDTH, WIDTH, Int32Array)
+      myGrid.stamp([[100,100]])
+
+      for (let i = 0; i < 400; i++) {
+        myGrid = iteration(myGrid, i)
+        drawCircles(myGrid, ctx, RADIUS, (v) => {
+          return 'hsl(' + 10 * v + ',100%,60%)'
+        })
+        // drawLines(myGrid, ctx, RADIUS)
+        await wait(20)
+      }
+    }
+
+    setTimeout(main)
+
+  </script>
+</head>
+
+<body>
+</body>
+
+</html>

@@ -1,0 +1,71 @@
+<html>
+
+<head>
+  <script type='module'>
+
+    import { HexLattice } from './hexLattice.js'
+    import { iteration, drawCircles, drawLines } from './metacron.js'
+
+
+    function wait(ms) {
+      return new Promise((resolve, reject) => {
+        setTimeout(resolve, ms)
+      })
+    }
+
+    function vantStep(grid, vant){
+      const GREEN = 10
+      const RED = 1
+      const neis = grid.neighbors6Coords(vant.x, vant.y)
+        const [x2, y2] = neis[vant.d]
+        vant.x = x2
+        vant.y = y2
+        const patchVal = grid.getGridXY(x2, y2)
+        if (patchVal == GREEN) {
+          vant.d = (vant.d + 1) % 6
+          grid.setGridXY(x2, y2, RED) // set to red
+        } else { // 0 or 1. eg black or red
+          vant.d = (vant.d + 6 - 1) % 6
+          grid.setGridXY(x2, y2, GREEN) // set to green
+        }
+    }
+
+    async function main() {
+
+      const WIDTH = 200
+      const RADIUS = 4
+
+      const can = document.createElement('canvas')
+      can.height = can.width = 800
+      document.body.appendChild(can)
+      const ctx = can.getContext('2d')
+      ctx.fillStyle = "#000"
+      ctx.fillRect(0, 0, can.width, can.height)
+
+      let myGrid = new HexLattice(WIDTH, WIDTH, Int32Array)
+
+      const vants = []
+      for(let i=0; i<6; i++) {
+        vants.push({x:Math.floor(Math.random()*40)+40, y:Math.floor(Math.random()*40)+40, d:Math.floor(Math.random()*6) })
+      }
+      console.log(vants)
+
+      for (let i = 0; i < 60000; i++) {
+        vants.forEach(vant=>vantStep(myGrid, vant))
+
+        drawCircles(myGrid, ctx, RADIUS, (v) => {
+          return 'hsl(' + 10 * v + ',100%,60%)'
+        })
+        await wait(30)
+      }
+    }
+
+    setTimeout(main)
+
+  </script>
+</head>
+
+<body>
+</body>
+
+</html>
