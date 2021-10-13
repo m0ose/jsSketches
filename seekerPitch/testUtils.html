@@ -1,22 +1,86 @@
 <html>
     <script type="module">
 
-        import {getIndexPageByUsualSuspectsSearch, parseIndexPageData} from './utils.js'
-        
+        import {
+            getIndexPageByUsualSuspectsSearch,
+            parseIndexPageData,
+            sampleTimeListForZ,
+        } from './utils.js'
+        import { startDataBase } from './treeDB.js'
+        import highcharts from 'https://cdn.skypack.dev/highcharts'
 
-        async function main() {
+        async function getExamplePage(cameraID = 'Axis-DuncanRanch2' ) {
             console.log('main called')
-            const cameraID = 'Axis-DuncanRanch2'
-            const approxTime = 1633465647000
-            const { path, response } =
-                await getIndexPageByUsualSuspectsSearch(cameraID, approxTime- Math.random()*60*60*24*365)
+            const approxTime = 1609819200000 + Math.random() *270 * 60 * 60 * 24 *1000
+                // 1633465647000 - Math.random() * 60 * 60 * 24 * 365
+            const { path, response } = await getIndexPageByUsualSuspectsSearch(
+                cameraID,
+                approxTime
+            )
             console.log('Parsing index Path', path)
             const text = await response.text()
             const indexTimes = await parseIndexPageData(text)
-            const indexTimesWithPath = indexTimes.map(x=>{return {...x, url:`${path}/${x.filename}`} })
-            console.log(indexTimesWithPath)
+            const indexTimesWithPath = indexTimes.map((x) => {
+                return {
+                    ...x,
+                    url: `${path}/${x.filename}`,
+                    cameraID: cameraID,
+                }
+            })
+            return indexTimesWithPath
         }
-        setTimeout(main)
 
+        async function testDB() {
+            const db = startDataBase()
+            console.log(db)
+            const original = await getExamplePage('Axis-DuncanRanch2')
+            console.log(original)
+            for (let z = 0; z < 20; z++) {
+                console.time('bulk put' + z)
+                const sample = sampleTimeListForZ(z, original)
+                await db[`z${z}`].bulkPut(sample)
+                console.timeEnd('bulk put' + z)
+            }
+            await plotPoints(db, 'Axis-DuncanRanch2')
+        }
+        setTimeout(testDB)
+
+        async function plotPoints(db, cameraID) {
+            let data = []
+            for(let z=0; z<20; z++){
+                const a = await db[`z${z}`]
+                let b = await a.toArray()
+                if(cameraID){
+                    b = await a.where('cameraID').equals(cameraID).toArray()
+                }
+                const c = b.map(x=>[x.time , z])
+                data = data.concat(c)
+            }
+
+            highcharts.chart('container', {
+                chart: {
+                    type: 'scatter',
+                    zoomType: 'xy',
+                },
+
+                plotOptions: {
+                    scatter: {
+                        marker: {
+                            radius: 2,
+                        },
+                    },
+                },
+                series: [
+                    {
+                        name: 'points',
+                        color: 'rgba(223, 83, 83, .5)',
+                        data,
+                    },
+                ],
+            })
+        }
     </script>
+    <body>
+        <div id="container"></div>
+    </body>
 </html>
