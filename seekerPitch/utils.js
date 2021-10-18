@@ -1,14 +1,7 @@
-export function dateToYearsDaysHoursUTC(date) {
-    const days =
-        (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) -
-            Date.UTC(date.getFullYear(), 0, 0)) /
-        (24 * 60 * 60 * 1000)
-    const years = date.getUTCFullYear()
-    const hours = date.getUTCHours()
-    return { days, years, hours }
-}
+import { getDatePath } from './timeUtils.js'
 
-async function fetchWithCache(url, cacheName = 'seeker-cache') {
+async function fetchWithCache(url) {
+    const cacheName = 'seeker-cache'
     const cache = await caches.open(cacheName)
     const req = new Request(url)
     const cacheResponse = await cache.match(req)
@@ -21,17 +14,43 @@ async function fetchWithCache(url, cacheName = 'seeker-cache') {
     return cacheResponse2
 }
 
-export async function getIndexPageByUsualSuspectsSearch(cameraID, approxTime) {
-    const { days, years, hours } = dateToYearsDaysHoursUTC(new Date(approxTime))
-    const awfPath = `${cameraID}/${years}/${days.toString().padStart(3,'0')}/${hours.toString().padStart(2,'0')}`
-    const urls = [
-      `https://proxy.acequia.io/proxy?url=https://node.redfish.com/Documents/cody/timeLapse/images/${cameraID}/${years}/${days}/${hours}`,
-        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/redis/${awfPath}`,
-        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/redis2/${awfPath}`,
-        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis/${awfPath}`,
-        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis2/${awfPath}`,
+export async function getImageIndexPage(cameraID, approxTime) {
+    const approxDate = new Date(approxTime)
+    const awfPath = getDatePath(approxDate)
+
+    // check database if it has been fetched. This will be needed for checking tree structure
+    const indexURLS = [
+        `https://proxy.acequia.io/proxy?url=https://node.redfish.com/Documents/cody/timeLapse/images/${cameraID}/${getDatePath(
+            approxDate,
+            false
+        )}`,
+        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/redis/${cameraID}/${awfPath}`,
+        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/redis2/${cameraID}/${awfPath}`,
+        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis/${cameraID}/${awfPath}`,
+        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis2/${cameraID}/${awfPath}`,
     ]
-    for (let x of urls) {
+    const response = await _getIndexPageByUsualSuspectsSearch(indexURLS)
+    if(response){
+      // mark that it was fetched
+      return response
+    } else {
+      // put marker in db to say we checked
+    }
+}
+
+// export async function getThumbnailIndexPage(cameraID, approxTime) {
+//     const approxDate = new Date(approxTime)
+//     const awfPath = getDatePath(approxDate)
+
+//     const indexURLS = [
+//         `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/thumbs/${cameraID}/${awfPath}`,
+//         `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/thumbs/${cameraID}/${awfPath}`,
+//     ]
+//     return _getIndexPageByUsualSuspectsSearch(indexURLS)
+// }
+
+async function _getIndexPageByUsualSuspectsSearch(indexURLS) {
+    for (let x of indexURLS) {
         try {
             const response = await fetchWithCache(x)
             console.log(response)
@@ -66,18 +85,43 @@ export function parseIndexPageData(indexText) {
     return allTheStuff
 }
 
-export function sampleTimeListForZ(z, timeList) {
+export function sampleFromTimeListForZ(z, timeList) {
     return timeList.reduce((acc, curr) => {
         if (acc.length <= 0) return [curr]
         const prev = acc[acc.length - 1]
         const elapsed = Math.abs(prev.time - curr.time)
         // prettier-ignore
-        if (elapsed > (2 ** z) * 1000) return acc.concat(curr)
+        if (elapsed > (2 ** z) * 1000) return acc.concat(curr);
         // console.log(elapsed)
         return acc
     }, [])
 }
 
-// For thumbnails,
-//    the directory is either https://map.alertwildfire.ucsd.edu/fireframes4/thumbs/${cameraID}/${years}/${days}/${hours}
-//    or https://map.alertwildfire.ucsd.edu/fireframes3/thumbs/${cameraID}/${years}/${days}/${hours}
+
+export function linspace(start,stop, number, includeStop = true, DataType = Float64Array) {
+  const result = new DataType(number + 1*includeStop)
+  for (let x=0; x<result.length; x++) {
+    result[x] = start + (stop-start)*(x/number) 
+  }
+  return result
+}
+
+export function getMiddleTimeStamps(start,stop, slotsCount) {
+  return linspace(start, stop, slotsCount, false).map(x=>x+(stop-start)/(2*slotsCount))
+}
+
+export function getTileTimeRange(tz, time) {
+  const n2 = 2 ** tz
+  const start = Math.floor(time/n2) * n2 
+  const end = start + n2
+  return [start,end]
+}
+
+export function getOptimalTileSlotTimes(tz,time, slotCount) {
+  const [start, stop] = getTileTimeRange(tz,time)
+  console.log({start,stop})
+  const times = getMiddleTimeStamps(start, stop, slotCount)
+  console.log(times)
+  return times
+}
+

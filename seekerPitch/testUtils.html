@@ -2,18 +2,18 @@
     <script type="module">
 
         import {
-            getIndexPageByUsualSuspectsSearch,
+            getImageIndexPage,
             parseIndexPageData,
-            sampleTimeListForZ,
+            sampleFromTimeListForZ,
         } from './utils.js'
-        import { startDataBase } from './treeDB.js'
+        import { getTreeDataBase } from './treeDB.js'
         import highcharts from 'https://cdn.skypack.dev/highcharts'
 
         async function getExamplePage(cameraID = 'Axis-DuncanRanch2' ) {
             console.log('main called')
             const approxTime = 1609819200000 + Math.random() *270 * 60 * 60 * 24 *1000
                 // 1633465647000 - Math.random() * 60 * 60 * 24 * 365
-            const { path, response } = await getIndexPageByUsualSuspectsSearch(
+            const { path, response } = await getImageIndexPage(
                 cameraID,
                 approxTime
             )
@@ -31,17 +31,18 @@
         }
 
         async function testDB() {
-            const db = startDataBase()
+            const camID = 'Axis-DuncanRanch2'
+            const db = getTreeDataBase()
             console.log(db)
-            const original = await getExamplePage('Axis-DuncanRanch2')
+            const original = await getExamplePage(camID)
             console.log(original)
             for (let z = 0; z < 20; z++) {
                 console.time('bulk put' + z)
-                const sample = sampleTimeListForZ(z, original)
+                const sample = sampleFromTimeListForZ(z, original)
                 await db[`z${z}`].bulkPut(sample)
                 console.timeEnd('bulk put' + z)
             }
-            await plotPoints(db, 'Axis-DuncanRanch2')
+            await plotPoints(db, camID)
         }
         setTimeout(testDB)
 
