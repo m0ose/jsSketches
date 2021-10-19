@@ -3,11 +3,11 @@ import { binarySearchForNumber } from './binarySearch.js'
 import { linspaceMiddle } from './linspace.js'
 
 /**
- * 
- * @param {String} cameraID 
- * @param {int} tz 
- * @param {Number} timeMS 
- * @param {int} slotCount 
+ *
+ * @param {String} cameraID
+ * @param {int} tz
+ * @param {Number} timeMS
+ * @param {int} slotCount
  * @returns {Array} {filename, url, timestamp, date, cameraID}
  */
 export async function getTile(cameraID, tz, timeMS, slotCount) {
@@ -19,33 +19,23 @@ export async function getTile(cameraID, tz, timeMS, slotCount) {
         try {
             console.log('getting', cameraID, t)
             const entries = await getIndexPageJSON(cameraID, t)
-            const {index, value} = binarySearchForNumber(entries, t, 'timestamp')
-            const entry = value//entries[index]
+            const { index, value } = binarySearchForNumber(
+                entries,
+                t,
+                'timestamp'
+            )
+            const entry = value //entries[index]
             actualTimes.push(entry)
         } catch (err) {
             console.error(err)
         }
     }
-    const actualTimesUnique = removeDuplicatesFromSortedList(
+    const actualTimesUnique = removeDuplicatesFromList(
         actualTimes,
         'filename'
     )
 
     return actualTimesUnique
-}
-
-async function fetchWithCache(url) {
-    const cacheName = 'seeker-cache'
-    const cache = await caches.open(cacheName)
-    const req = new Request(url)
-    const cacheResponse = await cache.match(req)
-    if (cacheResponse && cacheResponse.ok) {
-        console.log('found in cache', url)
-        return cacheResponse
-    }
-    const addResponse = await cache.add(req)
-    const cacheResponse2 = await cache.match(req)
-    return cacheResponse2
 }
 
 async function getIndexPageJSON(cameraID, approxTime) {
@@ -85,13 +75,26 @@ async function _getIndexPageByUsualSuspectsSearch(indexURLS) {
     for (let x of indexURLS) {
         try {
             const response = await fetchWithCache(x)
-            if (response.status == 200) {
+            if (response.status >= 200 && response.status < 300) {
                 return { path: x, response }
             }
         } catch (err) {
             console.error(err)
         }
     }
+}
+
+async function fetchWithCache(url) {
+    const cacheName = 'seeker-cache'
+    const cache = await caches.open(cacheName)
+    const req = new Request(url)
+    const cacheResponse = await cache.match(req)
+    if (cacheResponse) {
+        return cacheResponse
+    }
+    const fetchResp = await fetch(req)
+    cache.put(url, fetchResp)
+    return fetchResp
 }
 
 function parseIndexPageData(indexText) {
@@ -101,7 +104,8 @@ function parseIndexPageData(indexText) {
     const allNames = jpegs.concat(pngs).map((x) => x.substr(6))
     const allTheStuff = allNames
         .map((x) => {
-            const timestamp = 1000 * parseFloat(x.split('.png')[0].split('.jpg')[0])
+            const timestamp =
+                1000 * parseFloat(x.split('.png')[0].split('.jpg')[0])
             if (isNaN(timestamp)) {
                 console.warn('failed to parse timestamp on', x)
                 return undefined
@@ -131,7 +135,13 @@ function optimalTileSlotTimes(tz, timeMS, slotCount) {
     return times
 }
 
-function removeDuplicatesFromSortedList(sortedList, optionalKey) {
+function removeDuplicatesFromList(someList, optionalKey) {
+    const sortedList = [].concat(someList).sort((a, b) => {
+        if (optionalKey) {
+            return a[optionalKey] - b[optionalKey]
+        }
+        return a - b
+    })
     const result = [sortedList[0]]
     for (let i = 1; i < sortedList.length; i++) {
         const prev = result[result.length - 1]
