@@ -17,12 +17,3 @@ function dateToYearsDaysHoursUTC(date) {
   return { days, years, hours }
 }
 
-function getPathsForDuration(start, end) {
-  const st2 = new Date(start).getTime()
-  const end2 = new Date(end).getTime()
-  for (let t = st2; st2 <= end; t += 1000 * 60 * 60) {
-    const t2 = new Date(t)
-    const datePath = getDatePath(t2)
-
-  }
-}
