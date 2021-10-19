@@ -1,62 +1,14 @@
 <html>
     <script type="module">
-
-        import {
-            getImageIndexPage,
-            parseIndexPageData,
-            sampleFromTimeListForZ,
-        } from './utils.js'
         import { getTreeDataBase } from './treeDB.js'
         import highcharts from 'https://cdn.skypack.dev/highcharts'
 
-        async function getExamplePage(cameraID = 'Axis-DuncanRanch2' ) {
-            console.log('main called')
-            const approxTime = 1609819200000 + Math.random() *270 * 60 * 60 * 24 *1000
-                // 1633465647000 - Math.random() * 60 * 60 * 24 * 365
-            const { path, response } = await getImageIndexPage(
-                cameraID,
-                approxTime
-            )
-            console.log('Parsing index Path', path)
-            const text = await response.text()
-            const indexTimes = await parseIndexPageData(text)
-            const indexTimesWithPath = indexTimes.map((x) => {
-                return {
-                    ...x,
-                    url: `${path}/${x.filename}`,
-                    cameraID: cameraID,
-                }
+        import { getTile } from './utils.js'
+
+        async function plotPoints(dataIn, cameraID) {
+            let data = dataIn.map((v, i) => {
+                return [i, v.timestamp]
             })
-            return indexTimesWithPath
-        }
-
-        async function testDB() {
-            const camID = 'Axis-DuncanRanch2'
-            const db = getTreeDataBase()
-            console.log(db)
-            const original = await getExamplePage(camID)
-            console.log(original)
-            for (let z = 0; z < 20; z++) {
-                console.time('bulk put' + z)
-                const sample = sampleFromTimeListForZ(z, original)
-                await db[`z${z}`].bulkPut(sample)
-                console.timeEnd('bulk put' + z)
-            }
-            await plotPoints(db, camID)
-        }
-        setTimeout(testDB)
-
-        async function plotPoints(db, cameraID) {
-            let data = []
-            for(let z=0; z<20; z++){
-                const a = await db[`z${z}`]
-                let b = await a.toArray()
-                if(cameraID){
-                    b = await a.where('cameraID').equals(cameraID).toArray()
-                }
-                const c = b.map(x=>[x.time , z])
-                data = data.concat(c)
-            }
 
             highcharts.chart('container', {
                 chart: {
@@ -80,6 +32,11 @@
                 ],
             })
         }
+
+        console.log('hello')
+        const res = await getTile('Axis-WolfMtn2', 14, 1633465647000, 256)
+        console.log(res)
+        plotPoints(res)
     </script>
     <body>
         <div id="container"></div>

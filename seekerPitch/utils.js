@@ -22,7 +22,6 @@ export async function getTile(cameraID, tz, timeMS, slotCount) {
             const {index, value} = binarySearchForNumber(entries, t, 'timestamp')
             const entry = value//entries[index]
             actualTimes.push(entry)
-            console.log(index, entry)
         } catch (err) {
             console.error(err)
         }
@@ -31,9 +30,6 @@ export async function getTile(cameraID, tz, timeMS, slotCount) {
         actualTimes,
         'filename'
     )
-
-    console.log('actualTimes', actualTimes)
-    console.log('actualTimesUnique', actualTimesUnique)
 
     return actualTimesUnique
 }
@@ -54,7 +50,6 @@ async function fetchWithCache(url) {
 
 async function getIndexPageJSON(cameraID, approxTime) {
     const { path, response } = await getImageIndexPage(cameraID, approxTime)
-    console.log('Parsing index Path', path)
     const text = await response.text()
     const entries = await parseIndexPageData(text)
     const entriesWithURL = entries.map((x) => {
@@ -90,12 +85,11 @@ async function _getIndexPageByUsualSuspectsSearch(indexURLS) {
     for (let x of indexURLS) {
         try {
             const response = await fetchWithCache(x)
-            console.log(response)
             if (response.status == 200) {
                 return { path: x, response }
             }
         } catch (err) {
-            console.log(err)
+            console.error(err)
         }
     }
 }
@@ -133,9 +127,7 @@ function tileTimeExtent(tz, timeMS) {
 
 function optimalTileSlotTimes(tz, timeMS, slotCount) {
     const [start, stop] = tileTimeExtent(tz, timeMS)
-    console.log({ start, stop })
     const times = linspaceMiddle(start, stop, slotCount)
-    console.log(times)
     return times
 }
 
