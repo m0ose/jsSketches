@@ -1,4 +1,5 @@
 import { getDatePath } from './timeUtils.js'
+import {binarySearchForNumber} from './binarySearch.js'
 
 async function fetchWithCache(url) {
     const cacheName = 'seeker-cache'
@@ -30,11 +31,11 @@ export async function getImageIndexPage(cameraID, approxTime) {
         `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis2/${cameraID}/${awfPath}`,
     ]
     const response = await _getIndexPageByUsualSuspectsSearch(indexURLS)
-    if(response){
-      // mark that it was fetched
-      return response
+    if (response) {
+        // mark that it was fetched
+        return response
     } else {
-      // put marker in db to say we checked
+        // put marker in db to say we checked
     }
 }
 
@@ -97,31 +98,99 @@ export function sampleFromTimeListForZ(z, timeList) {
     }, [])
 }
 
+export function linspace(
+    start,
+    stop,
+    number,
+    includeStop = true,
+    DataType = Float64Array
+) {
+    const result = new DataType(number + 1 * includeStop)
+    for (let x = 0; x < result.length; x++) {
+        result[x] = start + (stop - start) * (x / number)
+    }
+    return result
+}
 
-export function linspace(start,stop, number, includeStop = true, DataType = Float64Array) {
-  const result = new DataType(number + 1*includeStop)
-  for (let x=0; x<result.length; x++) {
-    result[x] = start + (stop-start)*(x/number) 
+function linspaceMiddle(start, stop, slotsCount) {
+    return linspace(start, stop, slotsCount, false).map(
+        (x) => x + (stop - start) / (2 * slotsCount)
+    )
+}
+
+export function tileTimeExtent(tz, timeMS) {
+    const n2 = 2 ** tz
+    const timeSec = timeMS / 1000
+    // prettier-ignore
+    const start = Math.floor((timeSec) / n2) * n2 
+    const end = start + n2
+    return [start * 1000, end * 1000]
+}
+
+export function optimalTileSlotTimes(tz, timeMS, slotCount) {
+    const [start, stop] = tileTimeExtent(tz, timeMS)
+    console.log({ start, stop })
+    const times = linspaceMiddle(start, stop, slotCount)
+    console.log(times)
+    return times
+}
+
+export async function getTile(cameraID, tz, timeMS, slotCount) {
+    const optimalTimes1 = optimalTileSlotTimes(tz, timeMS, slotCount)
+    // download the index pages
+    const actualTimes = []
+    for (let i=0; i<optimalTimes1.length; i++){
+      const t = optimalTimes1[i]
+      try{
+        console.log('getting', cameraID, t)
+        const entries = await getIndexPageJSON(cameraID, t)
+        const index = binarySearchForNumber(entries, t, 'time')
+        const entry = entries[index]
+        actualTimes.push(entry)
+        console.log(index, entry)
+      } catch(err){
+        console.error(err)
+      }
+    }
+    const actualTimesUnique = removeDuplicatesFromSortedList(actualTimes, 'filename')
+
+    console.log('actualTimes',actualTimes)
+    console.log('actualTimesUnique',actualTimesUnique)
+
+    return actualTimesUnique
+}
+
+
+
+function removeDuplicatesFromSortedList(sortedList, optionalKey){
+  const result = [sortedList[0]]
+  for(let i=1; i< sortedList.length; i++){
+    const prev = result[result.length-1]
+    const curr = sortedList[i]
+    if(optionalKey){
+      if(prev[optionalKey] != curr[optionalKey]){
+        result.push(curr)
+      }
+    } else {
+      if(prev !== curr){
+        result.push(curr)
+      }
+    }
   }
   return result
 }
 
-export function getMiddleTimeStamps(start,stop, slotsCount) {
-  return linspace(start, stop, slotsCount, false).map(x=>x+(stop-start)/(2*slotsCount))
+async function getIndexPageJSON(cameraID, approxTime) {
+    const { path, response } = await getImageIndexPage(cameraID, approxTime)
+    console.log('Parsing index Path', path)
+    const text = await response.text()
+    const entries = await parseIndexPageData(text)
+    const entriesWithURL = entries.map((x) => {
+        return {
+            ...x,
+            url: `${path}/${x.filename}`,
+            cameraID: cameraID,
+        }
+    })
+    return entriesWithURL
 }
-
-export function getTileTimeRange(tz, time) {
-  const n2 = 2 ** tz
-  const start = Math.floor(time/n2) * n2 
-  const end = start + n2
-  return [start,end]
-}
-
-export function getOptimalTileSlotTimes(tz,time, slotCount) {
-  const [start, stop] = getTileTimeRange(tz,time)
-  console.log({start,stop})
-  const times = getMiddleTimeStamps(start, stop, slotCount)
-  console.log(times)
-  return times
-}
-
