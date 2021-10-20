@@ -3,22 +3,32 @@ import { binarySearchForNumber } from './binarySearch.js'
 import { linspaceMiddle } from './linspace.js'
 
 /**
+ * Get time tile.
  *
  * @param {String} cameraID
  * @param {int} tz
  * @param {Number} timeMS
  * @param {int} slotCount
+ * @param {function} statusCB
+ * @param {function} indexUrlFunction
  * @returns {Array} {filename, url, timestamp, date, cameraID}
  */
-export async function getTile(cameraID, tz, timeMS, slotCount) {
+export async function getTimeTile(
+    cameraID,
+    tz,
+    timeMS,
+    slotCount,
+    statusCB = () => {},
+    indexUrlFunction = fullImageIndexPageURLs
+) {
     const optimalTimes1 = optimalTileSlotTimes(tz, timeMS, slotCount)
     // download the index pages
     const actualTimes = []
     for (let i = 0; i < optimalTimes1.length; i++) {
         const t = optimalTimes1[i]
         try {
-            console.log('getting', cameraID, t)
-            const entries = await getIndexPageJSON(cameraID, t)
+            // console.log('getting', cameraID, t)
+            const entries = await getIndexPageJSON(cameraID, t, indexUrlFunction)
             const { index, value } = binarySearchForNumber(
                 entries,
                 t,
@@ -29,19 +39,52 @@ export async function getTile(cameraID, tz, timeMS, slotCount) {
         } catch (err) {
             console.error(err)
         }
+        setTimeout(statusCB, 0, { percent: i / optimalTimes1.length })
     }
-    const actualTimesUnique = removeDuplicatesFromList(
-        actualTimes,
-        'filename'
-    )
+    const actualTimesUnique = removeDuplicatesFromList(actualTimes, 'filename')
+    setTimeout(statusCB, 0, { percent: 1, result: actualTimesUnique })
 
     return actualTimesUnique
 }
 
-async function getIndexPageJSON(cameraID, approxTime) {
-    const { path, response } = await getImageIndexPage(cameraID, approxTime)
+export function fullImageIndexPageURLs(cameraID, approxTime) {
+  const approxDate = new Date(approxTime)
+  const awfPath = getDatePath(approxDate)
+
+  // check database if it has been fetched. This will be needed for checking tree structure
+  const indexURLs = [
+      `https://proxy.acequia.io/proxy?url=https://node.redfish.com/Documents/cody/timeLapse/images/${cameraID}/${getDatePath(
+          approxDate,
+          false
+      )}`,
+      `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/redis/${cameraID}/${awfPath}`,
+      `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/redis2/${cameraID}/${awfPath}`,
+      `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis/${cameraID}/${awfPath}`,
+      `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis2/${cameraID}/${awfPath}`,
+  ]
+  return indexURLs
+}
+
+ export function thumbnailIndexPageURLs(cameraID, approxTime) {
+     const approxDate = new Date(approxTime)
+     const awfPath = getDatePath(approxDate)
+     const indexURLs = [
+         `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/thumbs/${cameraID}/${awfPath}`,
+         `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/thumbs/${cameraID}/${awfPath}`,
+     ]
+     return indexURLs
+ }
+
+async function getIndexPageJSON(cameraID, approxTime, indexURLFunction) {
+    const urls = indexURLFunction(cameraID, approxTime)
+    const { path, response } = await getIndexPageByUsualSuspectsSearch(urls)
+    if (!response.ok) return []
+    if (response.bodyUsed) {
+        console.warn('foo', path, response)
+    }
     const text = await response.text()
     const entries = await parseIndexPageData(text)
+    // console.log('entries', entries)
     const entriesWithURL = entries.map((x) => {
         return {
             ...x,
@@ -52,27 +95,8 @@ async function getIndexPageJSON(cameraID, approxTime) {
     return entriesWithURL
 }
 
-async function getImageIndexPage(cameraID, approxTime) {
-    const approxDate = new Date(approxTime)
-    const awfPath = getDatePath(approxDate)
-
-    // check database if it has been fetched. This will be needed for checking tree structure
-    const indexURLS = [
-        `https://proxy.acequia.io/proxy?url=https://node.redfish.com/Documents/cody/timeLapse/images/${cameraID}/${getDatePath(
-            approxDate,
-            false
-        )}`,
-        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/redis/${cameraID}/${awfPath}`,
-        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/redis2/${cameraID}/${awfPath}`,
-        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis/${cameraID}/${awfPath}`,
-        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis2/${cameraID}/${awfPath}`,
-    ]
-    const response = await _getIndexPageByUsualSuspectsSearch(indexURLS)
-    return response
-}
-
-async function _getIndexPageByUsualSuspectsSearch(indexURLS) {
-    for (let x of indexURLS) {
+async function getIndexPageByUsualSuspectsSearch(indexURLs) {
+    for (let x of indexURLs) {
         try {
             const response = await fetchWithCache(x)
             if (response.status >= 200 && response.status < 300) {
@@ -92,9 +116,11 @@ async function fetchWithCache(url) {
     if (cacheResponse) {
         return cacheResponse
     }
+    console.log('fetching', url)
     const fetchResp = await fetch(req)
-    cache.put(url, fetchResp)
-    return fetchResp
+    await cache.put(url, fetchResp)
+    const cacheResponse2 = await cache.match(req)
+    return cacheResponse2
 }
 
 function parseIndexPageData(indexText) {
@@ -158,14 +184,3 @@ function removeDuplicatesFromList(someList, optionalKey) {
     }
     return result
 }
-
-// export async function getThumbnailIndexPage(cameraID, approxTime) {
-//     const approxDate = new Date(approxTime)
-//     const awfPath = getDatePath(approxDate)
-
-//     const indexURLS = [
-//         `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/thumbs/${cameraID}/${awfPath}`,
-//         `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/thumbs/${cameraID}/${awfPath}`,
-//     ]
-//     return _getIndexPageByUsualSuspectsSearch(indexURLS)
-// }

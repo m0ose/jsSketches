@@ -1,9 +1,7 @@
 <html>
     <script type="module">
-        import { getTreeDataBase } from './treeDB.js'
         import highcharts from 'https://cdn.skypack.dev/highcharts'
-
-        import { getTile } from './utils.js'
+        import { getTimeTile, thumbnailIndexPageURLs } from './utils.js'
 
         async function plotPoints(dataIn, cameraID) {
             let data = dataIn.map((v, i) => {
@@ -34,7 +32,7 @@
         }
 
         console.log('hello')
-        const res = await getTile('Axis-WolfMtn2', 4, 1633465647000, 256)
+        const res = await getTimeTile('Axis-WolfMtn2', 15, 1633465647000, 256, (v)=>{console.log(v)}, thumbnailIndexPageURLs)
         console.log(res)
         plotPoints(res)
     </script>
