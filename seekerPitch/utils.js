@@ -28,7 +28,11 @@ export async function getTimeTile(
         const t = optimalTimes1[i]
         try {
             // console.log('getting', cameraID, t)
-            const entries = await getIndexPageJSON(cameraID, t, indexUrlFunction)
+            const entries = await getIndexPageJSON(
+                cameraID,
+                t,
+                indexUrlFunction
+            )
             const { index, value } = binarySearchForNumber(
                 entries,
                 t,
@@ -48,32 +52,32 @@ export async function getTimeTile(
 }
 
 export function fullImageIndexPageURLs(cameraID, approxTime) {
-  const approxDate = new Date(approxTime)
-  const awfPath = getDatePath(approxDate)
+    const approxDate = new Date(approxTime)
+    const awfPath = getDatePath(approxDate)
 
-  // check database if it has been fetched. This will be needed for checking tree structure
-  const indexURLs = [
-      `https://proxy.acequia.io/proxy?url=https://node.redfish.com/Documents/cody/timeLapse/images/${cameraID}/${getDatePath(
-          approxDate,
-          false
-      )}`,
-      `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/redis/${cameraID}/${awfPath}`,
-      `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/redis2/${cameraID}/${awfPath}`,
-      `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis/${cameraID}/${awfPath}`,
-      `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis2/${cameraID}/${awfPath}`,
-  ]
-  return indexURLs
+    // check database if it has been fetched. This will be needed for checking tree structure
+    const indexURLs = [
+        `https://proxy.acequia.io/proxy?url=https://node.redfish.com/Documents/cody/timeLapse/images/${cameraID}/${getDatePath(
+            approxDate,
+            false
+        )}`,
+        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/redis/${cameraID}/${awfPath}`,
+        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/redis2/${cameraID}/${awfPath}`,
+        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis/${cameraID}/${awfPath}`,
+        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/redis2/${cameraID}/${awfPath}`,
+    ]
+    return indexURLs
 }
 
- export function thumbnailIndexPageURLs(cameraID, approxTime) {
-     const approxDate = new Date(approxTime)
-     const awfPath = getDatePath(approxDate)
-     const indexURLs = [
-         `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/thumbs/${cameraID}/${awfPath}`,
-         `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/thumbs/${cameraID}/${awfPath}`,
-     ]
-     return indexURLs
- }
+export function thumbnailIndexPageURLs(cameraID, approxTime) {
+    const approxDate = new Date(approxTime)
+    const awfPath = getDatePath(approxDate)
+    const indexURLs = [
+        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes4/thumbs/${cameraID}/${awfPath}`,
+        `https://proxy.acequia.io/proxy?url=https://map.alertwildfire.ucsd.edu/fireframes3/thumbs/${cameraID}/${awfPath}`,
+    ]
+    return indexURLs
+}
 
 async function getIndexPageJSON(cameraID, approxTime, indexURLFunction) {
     const urls = indexURLFunction(cameraID, approxTime)
@@ -108,18 +112,21 @@ async function getIndexPageByUsualSuspectsSearch(indexURLs) {
     }
 }
 
+const cacheName = 'seeker-cache'
+
 async function fetchWithCache(url) {
-    const cacheName = 'seeker-cache'
-    const cache = await caches.open(cacheName)
+    const myCache = await caches.open(cacheName)
+    // const cacheName = 'seeker-cache'
+    // const cache = await caches.open(cacheName)
     const req = new Request(url)
-    const cacheResponse = await cache.match(req)
+    const cacheResponse = await myCache.match(req)
     if (cacheResponse) {
         return cacheResponse
     }
     console.log('fetching', url)
     const fetchResp = await fetch(req)
-    await cache.put(url, fetchResp)
-    const cacheResponse2 = await cache.match(req)
+    await myCache.put(url, fetchResp)
+    const cacheResponse2 = await myCache.match(req)
     return cacheResponse2
 }
 
