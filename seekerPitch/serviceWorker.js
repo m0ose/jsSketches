@@ -19,15 +19,19 @@ async function interceptFetch(ev) {
   if (match) {
     // cache hit
     console.log('hit', url)
+    // todo update if not an awf link
+    if(url.search('alertwildfire.ucsd.edu')<=0){
+      console.log('TODO needs updating')
+    }
+
     return match
   }
   // cache miss
+  const isAWF = url.search('AWFImageTiles') >= 0
+  const isAWFThumb = url.search('AWFThumbnailTiles') >= 0
   if (url.search('serviceWorker.js') >= 0 || url.search('testSW.html') >= 0) {
     return fetch(ev.request) // dont you cache this !!
-  } else if (
-    url.search('AWFImageTiles') >= 0 ||
-    url.search('AWFThumbnailTiles') >= 0
-  ) {
+  } else if (isAWF || isAWFThumb) {
     //  intercept and spoof special request
     console.log('intercepted', url)
     const paths = url.split('/')
@@ -35,23 +39,28 @@ async function interceptFetch(ev) {
     const tz = parseInt(paths.pop())
     const slots = parseInt(paths.pop())
     const cameraID = paths.pop()
-    console.log({ time, tz, slots, cameraID })
-    const tiles = await utils.getTimeTile(cameraID, tz, time, slots, (ev) => {
+    // console.log({ time, tz, slots, cameraID })
+    let indexFunc = utils.fullImageIndexPageURLs
+    if(isAWFThumb) indexFunc = utils.thumbnailIndexPageURLs
+    function statusFunc(ev) {
       console.log(`status: ${Math.round(100 * ev.percent)} complete`)
-    })
+    }
+    const tiles = await utils.getTimeTile(cameraID, tz, time, slots,statusFunc, indexFunc)
     // create blob to store and send back
     const blobtron = new Blob([JSON.stringify(tiles)], {
       type: 'application/json',
     })
     const result = new Response(blobtron)
-    await cache.put(ev.request.url, new Response(blobtron))
+    await cache.put(ev.request.url, result.clone())
     return result
   }
   // miss for all other fetches
   console.log('miss', url)
-  const resp = await fetch(ev.request)
+  const resp = await fetch(url)
   if (resp.ok) {
-    ev.waitUntil(cache.add(url))
+    // ev.waitUntil(cache.add(url))
+    console.log('caching', url)
+    ev.waitUntil(cache.put(url, resp.clone()))
   }
   return resp
 }

@@ -29,8 +29,12 @@ export async function getTimeTile(
     try {
       // console.log('getting', cameraID, t)
       const entries = await getIndexPageJSON(cameraID, t, indexUrlFunction)
-      const { index, value } = binarySearchForNumber(entries, t, 'timestamp')
-      const entry = value //entries[index]
+      // first make a assending sorted list. 
+      const sortedList = entries.sort((a, b) => {
+        return a['timestamp'] - b['timestamp']
+      })
+      const { index, value } = binarySearchForNumber(sortedList, t, 'timestamp')
+      const entry = value
       actualTimes.push(entry)
     } catch (err) {
       console.error(err)

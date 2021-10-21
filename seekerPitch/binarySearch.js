@@ -1,19 +1,12 @@
 /**
  * Binary search of numbers that returns nearest match
  *
- * @param {Array} someList
+ * @param {Array} sortedList list must be sorted in ascending order
  * @param {number} searchTerm
  * @param {string} optionalKey
  * @returns index
  */
-export function binarySearchForNumber(someList, searchTerm, optionalKey) {
-  // first make a assending sorted list. I make a copy in order to not have a side effect, but this may be bad with big lists.
-  const sortedList = [].concat(someList).sort((a, b) => {
-    if (optionalKey) {
-      return a[optionalKey] - b[optionalKey]
-    }
-    return a - b
-  })
+export function binarySearchForNumber(sortedList, searchTerm, optionalKey) {
   // Initialize left and right search indices
   let l = 0
   let r = sortedList.length - 1
