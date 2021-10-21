@@ -1,62 +1,64 @@
 <html>
-    <script type="module">
-        import highcharts from 'https://cdn.skypack.dev/highcharts'
-        import { getTimeTile, thumbnailIndexPageURLs } from './utils.js'
-        import './serviceWorkerInstaller.js'
+  <script type="module">
+    import highcharts from 'https://cdn.skypack.dev/highcharts'
+    import { getTimeTile, thumbnailIndexPageURLs } from './utils.js'
+    import './serviceWorkerInstaller.js'
 
-        async function plotPoints(dataIn, cameraID) {
-            let data = dataIn.map((v, i) => {
-                return [i, v.timestamp]
-            })
+    async function plotPoints(dataIn, cameraID) {
+      let data = dataIn.map((v, i) => {
+        return [i, v.timestamp]
+      })
 
-            highcharts.chart('container', {
-                chart: {
-                    type: 'scatter',
-                    zoomType: 'xy',
-                },
+      highcharts.chart('container', {
+        chart: {
+          type: 'scatter',
+          zoomType: 'xy',
+        },
 
-                plotOptions: {
-                    scatter: {
-                        marker: {
-                            radius: 2,
-                        },
-                    },
-                },
-                series: [
-                    {
-                        name: 'points',
-                        color: 'rgba(223, 83, 83, .5)',
-                        data,
-                    },
-                ],
-            })
-        }
-
-        console.log('hello')
-        // const res = await getTimeTile(
-        //     'Axis-WolfMtn2',
-        //     15,
-        //     1633465647000,
-        //     256,
-        //     (v) => {
-        //         console.log(v)
-        //     },
-        //     thumbnailIndexPageURLs
-        // )
-        const res = await getTimeTile(
-            'TreeHouse',//'Axis-WolfMtn2',
-            15,
-            1633465647000,
-            256,
-            (ev) => {
-                document.getElementById('status').innerHTML = `status: ${Math.round(100*ev.percent)} complete`
+        plotOptions: {
+          scatter: {
+            marker: {
+              radius: 2,
             },
-        )
-        console.log(res)
-        plotPoints(res)
-    </script>
-    <body>
-        <div id='status'></div>
-        <div id="container"></div>
-    </body>
+          },
+        },
+        series: [
+          {
+            name: 'points',
+            color: 'rgba(223, 83, 83, .5)',
+            data,
+          },
+        ],
+      })
+    }
+
+    console.log('hello')
+    // const res = await getTimeTile(
+    //     'Axis-WolfMtn2',
+    //     15,
+    //     1633465647000,
+    //     256,
+    //     (v) => {
+    //         console.log(v)
+    //     },
+    //     thumbnailIndexPageURLs
+    // )
+    const res = await getTimeTile(
+      'TreeHouse', //'Axis-WolfMtn2',
+      15,
+      1633465647000,
+      256,
+      (ev) => {
+        document.getElementById('status').innerHTML = `status: ${Math.round(
+          100 * ev.percent
+        )} complete`
+      }
+    )
+    console.log(res)
+    plotPoints(res)
+  </script>
+  <body>
+    <div id="status"></div>
+    <div id="container"></div>
+  </body>
 </html>

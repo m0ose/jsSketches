@@ -16,4 +16,3 @@ function dateToYearsDaysHoursUTC(date) {
   const hours = date.getUTCHours()
   return { days, years, hours }
 }
-

@@ -1,15 +1,19 @@
 <html>
-    <script type="module">
-        import './serviceWorkerInstaller.js'
+  <script type="module">
+    import './serviceWorkerInstaller.js'
 
-        const responseIntercepted = await fetch('./tileCache/TreeHouse/256/10/1633465647000')
-        const interceptedText = await responseIntercepted.text()
-        console.log('interceptedText', JSON.parse(interceptedText))
-        const response = await fetch('https://proxy.acequia.io/proxy?url=https://node.redfish.com/Documents/cody/timeLapse/images/TreeHouse/2021/278/16')
-        console.log(response)
-    </script>
-    <body>
-        <div id='status'></div>
-        <div id="container"></div>
-    </body>
+    const responseIntercepted = await fetch(
+      './AWFImageTiles/TreeHouse/256/13/1633465647000'
+    )
+    const interceptedText = await responseIntercepted.text()
+    console.log('interceptedText', JSON.parse(interceptedText))
+    const response = await fetch(
+      'https://proxy.acequia.io/proxy?url=https://node.redfish.com/Documents/cody/timeLapse/images/TreeHouse/2021/278/16'
+    )
+    console.log(response)
+  </script>
+  <body>
+    <div id="status"></div>
+    <div id="container"></div>
+  </body>
 </html>
