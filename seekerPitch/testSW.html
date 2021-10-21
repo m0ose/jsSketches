@@ -1,4 +1,10 @@
+
 <html>
+  <head>
+      <meta charset=“UTF-8”>
+
+  </head>
+
   <script type="module">
     import './serviceWorkerInstaller.js'
 
@@ -8,7 +14,7 @@
     const intercepted = await responseIntercepted.text()
     const interceptedJSON = JSON.parse(intercepted)
     console.log('intercepted AWF ', interceptedJSON)
-    const html = interceptedJSON.map(v=>`<span onClick=setIframe("${v.url}")>[]</span>`).join('\n')
+    const html = interceptedJSON.map(v=>`<span onClick=setIframe("${v.url}")>#</span>`).join('\n')
     document.getElementById('status').innerHTML += `<div>Full size: ${html}</div>`
     // try normal request
     const response = await fetch(
@@ -25,7 +31,7 @@
     const interceptedThumb = await responseInterceptedThumb.text()
     const interceptedThumbJSON = JSON.parse(interceptedThumb)
     console.log('intercepted AWF Thumb', interceptedThumbJSON)
-    const htmlThumb = interceptedThumbJSON.map(v=>`<span onClick=setIframe("${v.url}")>[]</span>`).join('\n')
+    const htmlThumb = interceptedThumbJSON.map(v=>`<span onClick=setIframe("${v.url}")>&#x1F60a;</span>`).join('\n')
     document.getElementById('status').innerHTML += `<div>thumbnail ${htmlThumb}</div>`
   </script>
   <body>

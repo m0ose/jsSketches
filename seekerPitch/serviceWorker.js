@@ -7,18 +7,16 @@ self.addEventListener('install', (ev) => {
   ev.waitUntil(precache())
 })
 
-
 function precache() {
   return caches.open(CACHENAME).then(function (cache) {
     return cache.addAll([
       './getTimeTile.js',
       './linspace.js',
       './binarySearch.js',
-      './timeUtils.js'
+      './timeUtils.js',
     ])
   })
 }
-
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method != 'GET') return
@@ -33,7 +31,7 @@ async function interceptFetch(ev) {
     // cache hit
     console.log('hit', url)
     // todo update if not an awf link
-    if(url.search('alertwildfire.ucsd.edu')<=0){
+    if (url.search('alertwildfire.ucsd.edu') <= 0) {
       console.log('TODO needs updating')
     }
 
@@ -54,11 +52,18 @@ async function interceptFetch(ev) {
     const cameraID = paths.pop()
     // console.log({ time, tz, slots, cameraID })
     let indexFunc = utils.fullImageIndexPageURLs
-    if(isAWFThumb) indexFunc = utils.thumbnailIndexPageURLs
+    if (isAWFThumb) indexFunc = utils.thumbnailIndexPageURLs
     function statusFunc(ev) {
       console.log(`status: ${Math.round(100 * ev.percent)} complete`)
     }
-    const tiles = await utils.getTimeTile(cameraID, tz, time, slots,statusFunc, indexFunc)
+    const tiles = await utils.getTimeTile(
+      cameraID,
+      tz,
+      time,
+      slots,
+      statusFunc,
+      indexFunc
+    )
     // create blob to store and send back
     const blobtron = new Blob([JSON.stringify(tiles)], {
       type: 'application/json',
@@ -77,5 +82,3 @@ async function interceptFetch(ev) {
   }
   return resp
 }
-
-
