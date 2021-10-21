@@ -1,4 +1,4 @@
-import * as utils from './utils.js'
+import * as utils from './getTimeTile.js'
 
 const CACHENAME = 'seeker-cache'
 
@@ -6,6 +6,19 @@ self.addEventListener('install', (ev) => {
   console.log('service worker installing')
   ev.waitUntil(precache())
 })
+
+
+function precache() {
+  return caches.open(CACHENAME).then(function (cache) {
+    return cache.addAll([
+      './getTimeTile.js',
+      './linspace.js',
+      './binarySearch.js',
+      './timeUtils.js'
+    ])
+  })
+}
+
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method != 'GET') return
@@ -65,8 +78,4 @@ async function interceptFetch(ev) {
   return resp
 }
 
-function precache() {
-  return caches.open(CACHENAME).then(function (cache) {
-    return cache.addAll([])
-  })
-}
+

@@ -1,6 +1,8 @@
 import { getDatePath } from './timeUtils.js'
-import { binarySearchForNumber } from './binarySearch.js'
+import { binarySearchForNumber, sortListInAscendingOrder } from './binarySearch.js'
 import { linspaceMiddle } from './linspace.js'
+
+const CACHENAME = 'seeker-cache'
 
 /**
  * Get time tile.
@@ -30,9 +32,7 @@ export async function getTimeTile(
       // console.log('getting', cameraID, t)
       const entries = await getIndexPageJSON(cameraID, t, indexUrlFunction)
       // first make a assending sorted list. 
-      const sortedList = entries.sort((a, b) => {
-        return a['timestamp'] - b['timestamp']
-      })
+      const sortedList = sortListInAscendingOrder(entries, 'timestamp')
       const { index, value } = binarySearchForNumber(sortedList, t, 'timestamp')
       const entry = value
       actualTimes.push(entry)
@@ -108,12 +108,11 @@ async function getIndexPageByUsualSuspectsSearch(indexURLs) {
   }
 }
 
-const cacheName = 'seeker-cache'
 
 async function fetchWithCache(url) {
-  const myCache = await caches.open(cacheName)
-  // const cacheName = 'seeker-cache'
-  // const cache = await caches.open(cacheName)
+  const myCache = await caches.open(CACHENAME)
+  // const CACHENAME = 'seeker-cache'
+  // const cache = await caches.open(CACHENAME)
   const req = new Request(url)
   const cacheResponse = await myCache.match(req)
   if (cacheResponse) {

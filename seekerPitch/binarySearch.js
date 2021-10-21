@@ -35,3 +35,14 @@ export function binarySearchForNumber(sortedList, searchTerm, optionalKey) {
   }
   return { index: l, value: sortedList[l] }
 }
+
+export function sortListInAscendingOrder(list, optionalKey){
+    // first make a assending sorted list. I make a copy in order to not have a side effect, but this may be bad with big lists.
+    const sortedList = [].concat(list).sort((a, b) => {
+      if (optionalKey) {
+        return a[optionalKey] - b[optionalKey]
+      }
+      return a - b
+    })
+    return sortedList
+}
