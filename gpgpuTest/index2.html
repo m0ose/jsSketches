@@ -1,0 +1,56 @@
+<html>
+
+
+<script type='module'>
+    import * as altAzUtils from './altAzUtils.js'
+    import gpuJs from 'https://cdn.skypack.dev/gpu.js';
+    import {reorganizedFragmentShader} from './reorganizedFragmentShader.js'
+    const includedFunctions = ['deg2rad',
+        'mag',
+        'dot',
+        'scale',
+        'subVectors',
+        'addVectors',
+        'normalize',
+        'threeD2AziAlt',
+        'pointRotate3D',
+        'aziAlt2ThreeD',
+        'cantUp',
+        'rotCantUp',
+        'cantTan',
+        'rotCantTan',
+        'aziRot',
+        'altRot',
+        'cantAziAlt',
+    ]
+
+    const gpu = new gpuJs.GPU({ mode: 'gpu' })
+    const funks = includedFunctions.map(x => altAzUtils[x])
+    funks.forEach(f => gpu.addFunction(f))
+
+    const kernel = gpu.createKernel(function () {
+        const fu = cantAziAlt(0.2, 1, 1, 1, 1, 1, 0)
+        return fu
+    }).setOutput([1])
+
+    const pc = altAzUtils.cantAziAlt(0.2, 1, 1, 1, 1, 1, 0)
+    console.log('correct val ', pc)
+
+    try{
+            const result1 = kernel();
+    console.log('gpu result 1',result1)
+    } catch(err){
+        console.error(err)
+    }
+
+
+    kernel.compiledFragmentShader = reorganizedFragmentShader
+    const result2 = kernel();
+    console.log('gpu result 2',result2)
+
+
+
+
+</script>
+
+</html>
