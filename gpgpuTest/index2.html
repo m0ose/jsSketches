@@ -4,7 +4,7 @@
 <script type='module'>
     import * as altAzUtils from './altAzUtils.js'
     import gpuJs from 'https://cdn.skypack.dev/gpu.js';
-    import {reorganizedFragmentShader} from './reorganizedFragmentShader.js'
+    import { reorganizedFragmentShader } from './reorganizedFragmentShader.js'
     const includedFunctions = ['deg2rad',
         'mag',
         'dot',
@@ -23,7 +23,11 @@
         'altRot',
         'cantAziAlt',
     ]
+    // try it on CPU
+    const pc = altAzUtils.cantAziAlt(0.2, 1, 1, 1, 1, 1, 0)
+    logger('correct val from cpu ', pc)
 
+    // set up gpu.js
     const gpu = new gpuJs.GPU({ mode: 'gpu' })
     const funks = includedFunctions.map(x => altAzUtils[x])
     funks.forEach(f => gpu.addFunction(f))
@@ -33,24 +37,30 @@
         return fu
     }).setOutput([1])
 
-    const pc = altAzUtils.cantAziAlt(0.2, 1, 1, 1, 1, 1, 0)
-    console.log('correct val ', pc)
-
-    try{
-            const result1 = kernel();
-    console.log('gpu result 1',result1)
-    } catch(err){
-        console.error(err)
+    // try and expect to fail
+    try {
+        const result1 = kernel();
+        logger('gpu result. Wow it worked', result1)
+    } catch (err) {
+        logger('Failed to run before changing the order of functions')
+        logger(err)
     }
 
-
+    // Try again after changing the order of the functions in the shader
     kernel.compiledFragmentShader = reorganizedFragmentShader
     const result2 = kernel();
-    console.log('gpu result 2',result2)
+    logger('gpu result after changing the order of fragment shader', result2)
 
 
-
-
+    function logger(...args){
+        let res = ''
+        args.forEach(x=>res += `<div>${x}</div>`)
+        document.body.innerHTML += `
+            <div>${res}</div>
+            <hr>
+        `
+        console.log(...args)
+    }
 </script>
 
 </html>
