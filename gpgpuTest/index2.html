@@ -25,7 +25,7 @@
     ]
     // try it on CPU
     const pc = altAzUtils.cantAziAlt(0.2, 1, 1, 1, 1, 1, 0)
-    logger('correct val from cpu ', pc)
+    logger('<b>correct val from cpu </b>', pc)
 
     // set up gpu.js
     const gpu = new gpuJs.GPU({ mode: 'gpu' })
@@ -40,16 +40,17 @@
     // try and expect to fail
     try {
         const result1 = kernel();
+
         logger('gpu result. Wow it worked', result1)
     } catch (err) {
-        logger('Failed to run before changing the order of functions')
-        logger(err)
+        // logger(`<pre>${kernel.compiledFragmentShader}</pre>`)
+        logger('<b>Failed to run</b>',err)
     }
 
     // Try again after changing the order of the functions in the shader
     kernel.compiledFragmentShader = reorganizedFragmentShader
     const result2 = kernel();
-    logger('gpu result after changing the order of fragment shader', result2)
+    logger('<b>gpu result after changing the order of fragment shader</b>', result2)
 
 
     function logger(...args){
