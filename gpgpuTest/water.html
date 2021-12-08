@@ -1,0 +1,77 @@
+<html>
+
+
+
+<script type='module'>
+
+    import GPU from 'https://cdn.skypack.dev/gpu.js';
+
+    function main() {
+        const gpu = new GPU.GPU({ mode: 'gpu' })
+        const w = 1024
+        const h = 1024
+
+        const waterStepKernel = gpu.createKernel(function (b2, b1, width, height, damping) {
+            const x = this.thread.x
+            const y = this.thread.y
+            const nei = b1[y][x + 1]
+                + b1[y][x - 1]
+                + b1[y - 1][x]
+                + b1[y + 1][x]
+            const me = b2[y][x]
+            let delta = 0
+            if (y > 10 && y < height - 11 && x > 10 && x < width - 11) {
+                delta = ((nei / 2) - me) * damping
+            }
+            return delta
+        }
+        ).setOutput([w, h])
+
+        let data = Array(w).fill().map(x => new Float32Array(h))
+        data[h / 2][w / 2] = 100
+        //start    
+        stepAndDrawLoop(waterStepKernel, data, data, w, h, 0)
+
+    }
+    setTimeout(main)
+
+
+    function stepAndDrawLoop(kernel, d1, d2, w, h, iter = 0) {
+        console.log(iter)
+        const d3 = kernel(d1, d2, w, h, 0.99)
+        draw(d3, w, h)
+        if (Math.random() > 0.991) {
+            d2[Math.floor(Math.random() * h)][Math.floor(Math.random() * w)] = 100
+        }
+        setTimeout(stepAndDrawLoop, 0, kernel, d2, d3, w, h, iter + 1)
+    }
+
+
+    function draw(data, w, h) {
+        const can = document.getElementById('can')
+        if (can.width != w || can.height != h) {
+            can.width = w
+            can.height = h
+        }
+        const ctx = can.getContext('2d')
+        const imgd = ctx.getImageData(0, 0, w, h)
+        for (let y = 0; y < imgd.height; y++) {
+            for (let x = 0; x < imgd.width; x++) {
+                const i = y * w + x
+                const v = data[y][x]
+                imgd.data[4 * i] = v * 4
+                imgd.data[4 * i + 1] = v * 128
+                imgd.data[4 * i + 2] = v * 255
+                imgd.data[4 * i + 3] = 255
+            }
+        }
+        ctx.putImageData(imgd, 0, 0)
+    }
+
+
+
+</script>
+<canvas id=can style=></canvas>
+<h3>Water using 2d arrays</h3>
+
+</html>

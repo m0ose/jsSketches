@@ -1,0 +1,80 @@
+<html>
+
+
+
+<script type='module'>
+
+    import GPU from 'https://cdn.skypack.dev/gpu.js';
+
+    function main() {
+        const gpu = new GPU.GPU({ mode: 'gpu' })
+        const w = 1024
+        const h = 1024
+
+        const waterStepKernel = gpu.createKernel(function (b2, b1, width, height, damping) {
+            const x = this.thread.x % width
+            const y = Math.floor(this.thread.x / width)
+            const nei = b1[getIndex(y, x + 1, width)]
+                + b1[getIndex(y, x - 1, width)]
+                + b1[getIndex(y - 1, x, width)]
+                + b1[getIndex(y + 1, x, width)]
+            const me = b2[getIndex(y, x, width)]
+            let delta = 0
+            if (y > 10 && y < height - 11 && x > 10 && x < width - 11) {
+                delta = ((nei / 2) - me) * damping
+            }
+            return delta
+        }).setFunctions([function getIndex(y, x, width) {
+            return Math.floor(y) * width + Math.floor(x)
+        }]).setOutput([w * h])
+        // init 0's
+        let data = new Float32Array(h * w)
+        // first droplet
+        data[w * h / 2 + w / 2] = 100
+        //start    
+        stepAndDrawLoop(waterStepKernel, data, data, w, h, 0)
+
+    }
+    setTimeout(main)
+
+
+    function stepAndDrawLoop(kernel, d1, d2, w, h, iter = 0) {
+        console.log(iter)
+        const d3 = kernel(d1, d2, w, h, 0.99)
+        if(iter%2==0)draw(d3, w, h)
+        if (Math.random() > 0.991) {
+            d2[Math.floor(Math.random() * h)*w + Math.floor(Math.random() * w)] = 100
+        }
+        setTimeout(stepAndDrawLoop, 0, kernel, d2, d3, w, h, iter + 1)
+    }
+
+    const canvas = document.getElementById('can')
+    const gl = canvas.getContext('webgl2');
+    const gpu2 = new GPU.GPU({canvas:canvas, context:gl})
+
+    const drawKernel = gpu2.createKernel(function (data,width){
+        const x = this.thread.x 
+        const y = this.thread.y
+        const v = data[y*width + x]
+        this.color(v, v*2, v*3,1)
+    }).setGraphical(true).setDynamicOutput(true).setOutput([1024,1024])
+
+    function draw(data, w, h) {
+        const can = document.getElementById('can')
+        if (can.width != w || can.height != h) {
+            can.width = w
+            can.height = h
+            drawKernel.setOutput([w,h])
+        }
+
+
+        drawKernel(data,w)
+
+    }
+
+
+
+</script>
+<canvas id=can style=></canvas>
+
+</html>

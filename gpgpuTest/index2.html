@@ -1,9 +1,10 @@
 <html>
 
-
+<script src='gpu2.js'></script>
 <script type='module'>
     import * as altAzUtils from './altAzUtils.js'
-    import gpuJs from 'https://cdn.skypack.dev/gpu.js';
+    // import GPU from 'https://cdn.skypack.dev/gpu.js';
+    // import GPU from './gpu.js'
     import { reorganizedFragmentShader } from './reorganizedFragmentShader.js'
     const includedFunctions = ['deg2rad',
         'mag',
@@ -28,7 +29,7 @@
     logger('<b>correct val from cpu </b>', pc)
 
     // set up gpu.js
-    const gpu = new gpuJs.GPU({ mode: 'gpu' })
+    const gpu = new GPU({ mode: 'gpu' })
     const funks = includedFunctions.map(x => altAzUtils[x])
     funks.forEach(f => gpu.addFunction(f))
 
@@ -36,6 +37,33 @@
         const fu = cantAziAlt(0.2, 1, 1, 1, 1, 1, 0)
         return fu
     }).setOutput([1])
+    kernel.setTactic('precision')
+    console.log('kernel', kernel)
+    debugger
+//     kernel.setNativeFunctions([{name:'pointRotate3D', source:`vec3 pointRotate3D(vec3 user_p1, vec3 user_p2, vec3 user_p0, float user_theta) {
+// vec3 user_p=subVectors(user_p0, user_p1);
+// vec3 user_N=subVectors(user_p2, user_p1);
+// vec3 user_n=normalize(user_N);
+// float user_c=cos(user_theta);
+// float user_t=(1.0-cos(user_theta));
+// float user_s=sin(user_theta);
+// float user_X=user_n[0],user_Y=user_n[1],user_Z=user_n[2];
+// float user_d11=(((user_t*user_X)*user_X)+user_c);
+// float user_d12=(((user_t*user_X)*user_Y)-(user_s*user_Z));
+// float user_d13=(((user_t*user_X)*user_Z)+(user_s*user_Y));
+// float user_d21=(((user_t*user_X)*user_Y)+(user_s*user_Z));
+// float user_d22=(((user_t*user_Y)*user_Y)+user_c);
+// float user_d23=(((user_t*user_Y)*user_Z)-(user_s*user_X));
+// float user_d31=(((user_t*user_X)*user_Z)-(user_s*user_Y));
+// float user_d32=(((user_t*user_Y)*user_Z)+(user_s*user_X));
+// float user_d33=(((user_t*user_Z)*user_Z)+user_c);
+// vec3 user_q=vec3(0.0, 0.0, 0.0);
+// user_q[0]=(((user_d11*user_p[0])+(user_d12*user_p[1]))+(user_d13*user_p[2]));
+// user_q[1]=(((user_d21*user_p[0])+(user_d22*user_p[1]))+(user_d23*user_p[2]));
+// user_q[2]=(((user_d31*user_p[0])+(user_d32*user_p[1]))+(user_d33*user_p[2]));
+// vec3 user_result=addVectors(user_q, user_p1);
+// return user_result;
+// }`}])
 
     // try and expect to fail
     try {
